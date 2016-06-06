@@ -33,10 +33,6 @@ func main() {
 	}
 
 	http.HandleFunc(`/create`, func(rw http.ResponseWriter, r *http.Request) {
-		if r.Method != "POST" {
-			rw.WriteHeader(http.StatusNotFound)
-		}
-
 		_, err := db.Exec(`INSERT INTO test_messages (msg) VALUES ($1)`, `hello dolly!`)
 		if err != nil {
 			rw.WriteHeader(http.StatusInternalServerError)
@@ -46,7 +42,7 @@ func main() {
 		rw.WriteHeader(http.StatusCreated)
 	})
 
-	if err := http.ListenAndServe(*addr, nil); err != nil {
+	if err := http.ListenAndServeTLS(":4568", "server.pem", "server.key", nil); err != nil {
 		log.Panic(err)
 	}
 }

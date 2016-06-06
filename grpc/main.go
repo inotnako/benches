@@ -1,17 +1,21 @@
 package main
 
 import (
-	"net/http"
-
 	"database/sql"
 	_ "github.com/lib/pq"
 
 	"flag"
-	"log"
+	"net"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/grpclog"
+
+	pb "github.com/antonikonovalov/benches/grpc/proto"
+	"github.com/antonikonovalov/benches/grpc/server"
 )
 
 var (
-	addr = flag.String(`addr`, `0.0.0.0:4567`, `binding address`)
+	addr = flag.String(`addr`, `0.0.0.0:4569`, `binding address`)
 )
 
 func main() {
@@ -20,7 +24,7 @@ func main() {
 	// init database
 	db, err := sql.Open("postgres", `postgres://localhost/benches?sslmode=disable`)
 	if err != nil {
-		log.Panic(err)
+		grpclog.Fatalf("failed Open postgres: %v", err)
 	}
 
 	db.SetMaxOpenConns(16 * 3 / 2)
@@ -29,26 +33,16 @@ func main() {
 	cleanup(db)
 	err = makeTestTables(db)
 	if err != nil {
-		log.Panic(err)
+		grpclog.Fatalf("failed makeTestTables: %v", err)
 	}
 
-	http.HandleFunc(`/create`, func(rw http.ResponseWriter, r *http.Request) {
-		if r.Method != "POST" {
-			rw.WriteHeader(http.StatusNotFound)
-		}
-
-		_, err := db.Exec(`INSERT INTO test_messages (msg) VALUES ($1)`, `hello dolly!`)
-		if err != nil {
-			rw.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
-		rw.WriteHeader(http.StatusCreated)
-	})
-
-	if err := http.ListenAndServe(*addr, nil); err != nil {
-		log.Panic(err)
+	lis, err := net.Listen("tcp", *addr)
+	if err != nil {
+		grpclog.Fatalf("failed to listen: %v", err)
 	}
+	grpcServer := grpc.NewServer()
+	pb.RegisterCreatorServer(grpcServer, server.New(db))
+	grpcServer.Serve(lis)
 }
 
 func makeTestTables(db *sql.DB) error {
