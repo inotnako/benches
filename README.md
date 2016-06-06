@@ -2,21 +2,25 @@
 
 some bench on golang
 
+
+
 # Results
 
+ Mac OS; 2,8 GHz Intel Core i5; 8 GB 1600 МGHz DDR3; Fusion Drive
+
 ```
-$ go test -bench=. -benchtime=5s -count=3
+$ go get -v -u ./...
+$ make build
+// set ulimit -n 10000 for each console
+$  ulimit -n 10000
+// run services
+$ bin/srvgrpc , bin/srvpq, bin/srvpq2
+
+$ go test -bench=. -benchtime=5s -cpu=4
 
   BenchmarkGrpc-4 	   30000	    265268 ns/op // like 6000 req/sec
-  BenchmarkGrpc-4 	   30000	    253664 ns/op
-  BenchmarkGrpc-4 	   30000	    233668 ns/op
   BenchmarkHttp-4 	   50000	    192015 ns/op  // like 10000 req/sec
-  BenchmarkHttp-4 	   50000	    193716 ns/op
-  BenchmarkHttp-4 	   50000	    192249 ns/op
   BenchmarkHttp2-4	   30000	    206757 ns/op // like 6000 req/sec
-  BenchmarkHttp2-4	   30000	    206644 ns/op
-  BenchmarkHttp2-4	   30000	    210661 ns/op
-  ok  	github.com/antonikonovalov/benches/grpc/client	90.587s
 
 $ psql/benches=# select count(*) from test_messages;
   count
