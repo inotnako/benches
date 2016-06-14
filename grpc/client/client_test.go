@@ -75,23 +75,27 @@ func BenchmarkGrpcByStream(b *testing.B) {
 				b.Errorf(`error grpc: %s`, err)
 			}
 		}
+		//println(`READED ALL!!!!`)
 		wg.Done()
 	}()
 
-	b.RunParallel(func(pbt *testing.PB) {
-		for pbt.Next() {
-			err = stream.Send(req)
-			if err != nil {
-				b.Errorf(`error grpc: %s`, err)
-			}
+	//b.RunParallel(func(pbt *testing.PB) {
+	//	for pbt.Next() {
+	for i := 0; i < b.N; i++ {
+		err = stream.Send(req)
+		if err != nil {
+			b.Errorf(`error grpc: %s`, err)
 		}
-	})
+	}
+	//})
 
 	wg.Wait()
+	//println(`CLOSE`)
 	err = stream.CloseSend()
 	if err != nil {
 		b.Errorf(`error grpc: %s`, err)
 	}
+	//println(`CLOSED`)
 }
 
 const (

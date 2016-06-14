@@ -28,7 +28,7 @@ type Request struct {
 	e error
 }
 
-func (s *server) CreateByStream(stream pb.Creator_CreateByStreamServer) error {
+func (s *server) CreateByStream2(stream pb.Creator_CreateByStreamServer) error {
 	for {
 		msg, err := stream.Recv()
 		if err == io.EOF {
@@ -53,28 +53,22 @@ func (s *server) CreateByStream(stream pb.Creator_CreateByStreamServer) error {
 	return nil
 }
 
-func (s *server) CreateByStream2(stream pb.Creator_CreateByStreamServer) error {
-	requests := RequestMessages(stream)
-	in, errChan, out := s.Processor()
+func (s *server) CreateByStream(stream pb.Creator_CreateByStreamServer) error {
+	in, errChan, out := s.processor()
+	go dispatcher(stream, in, errChan)
 	for {
 		select {
-		case req := <-requests:
-			print(`<- `)
-			if req.e == io.EOF {
+		case e := <-errChan:
+			if e == io.EOF {
 				return nil
 			}
-			if req.e != nil {
-				return req.e
-			}
-			in <- req.m
-			print(` | `)
-		case e := <-errChan:
 			return e
 		case resp := <-out:
-			println(`- > `)
-			err := stream.Send(resp)
-			if err != nil {
-				return err
+			if resp != nil {
+				err := stream.Send(resp)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -82,59 +76,45 @@ func (s *server) CreateByStream2(stream pb.Creator_CreateByStreamServer) error {
 	return nil
 }
 
-func (s *server) Processor() (chan *pb.MessageRequest, chan error, chan *pb.MessageResponse) {
-	in := make(chan *pb.MessageRequest, 0)
-	errC := make(chan error, 0)
-	out := make(chan *pb.MessageResponse, 0)
+func (s *server) processor() (chan *pb.MessageRequest, chan error, chan *pb.MessageResponse) {
+	w := 50
+	in := make(chan *pb.MessageRequest)
+	errC := make(chan error)
+	out := make(chan *pb.MessageResponse)
 
-	go func() {
-		var i int64
-		for _ = range in {
-			//time.Sleep(10 * time.Microsecond)
-			i++
-			out <- &pb.MessageResponse{Id: (1000000000000000004 + i)}
-			//select {
-			//case <-in:
-			//println(`PR IN:`)
-			//resp := new(pb.MessageResponse)
+	// start workers
+	for i := 0; i < w; i++ {
+		go func() {
+			for msg := range in {
+				resp := new(pb.MessageResponse)
+				err := s.db.QueryRow(`INSERT INTO test_messages (msg) VALUES ($1) RETURNING id`, msg.Msg).Scan(&resp.Id)
+				if err != nil {
+					errC <- err
+					close(errC)
+					close(out)
+					close(in)
+					return
+				} else {
+					out <- resp
+				}
 
-			//resp.Id = time.Now().UnixNano() + 123234345
-			//err := s.db.QueryRow(`INSERT INTO test_messages (msg) VALUES ($1) RETURNING id`, msg.Msg).Scan(&resp.Id)
-			//if err != nil {
-			//	//println(`PR ERR:`)
-			//	errC <- err
-			//	close(errC)
-			//	close(out)
-			//	close(in)
-			//	return
-			//} else {
-			//println(`PR OUT:`)
-
-			//}
-			//}
-		}
-		close(errC)
-		close(out)
-		close(in)
-		return
-	}()
+			}
+		}()
+	}
 
 	return in, errC, out
 }
 
-func RequestMessages(stream pb.Creator_CreateByStreamServer) chan *Request {
-	messages := make(chan *Request, 0)
+func dispatcher(stream pb.Creator_CreateByStreamServer, in chan *pb.MessageRequest, errColl chan error) {
 
-	go func() {
-		for {
-			msg, err := stream.Recv()
-			messages <- &Request{msg, err}
-			if err != nil {
-				close(messages)
-				return
-			}
+	for {
+		msg, err := stream.Recv()
+		if err != nil {
+			errColl <- err
+			return
+		} else {
+			in <- msg
 		}
-	}()
+	}
 
-	return messages
 }
