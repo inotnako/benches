@@ -7,6 +7,7 @@ import (
 	_ "github.com/lib/pq"
 
 	"flag"
+	"github.com/kavu/go_reuseport"
 	"log"
 )
 
@@ -32,6 +33,11 @@ func main() {
 		log.Panic(err)
 	}
 
+	lis, err := reuseport.NewReusablePortListener("tcp4", *addr)
+	if err != nil {
+		log.Fatalf("failed to listen: %v", err)
+	}
+
 	http.HandleFunc(`/create`, func(rw http.ResponseWriter, r *http.Request) {
 		if r.Method != "POST" {
 			rw.WriteHeader(http.StatusNotFound)
@@ -46,7 +52,7 @@ func main() {
 		rw.WriteHeader(http.StatusCreated)
 	})
 
-	if err := http.ListenAndServe(*addr, nil); err != nil {
+	if err := http.Serve(lis, nil); err != nil {
 		log.Panic(err)
 	}
 }

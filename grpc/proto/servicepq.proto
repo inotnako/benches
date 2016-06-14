@@ -6,6 +6,7 @@ service Creator {
     // метод позволяет сервисам реистриваться сервисам
     // для того чтобы потом их можно было использовать инспектору
     rpc Create(MessageRequest) returns (MessageResponse) {}
+    rpc CreateByStream(stream MessageRequest) returns (stream MessageResponse) {}
 }
 
 
@@ -16,4 +17,5 @@ message MessageRequest {
 
 message MessageResponse {
     int64 id = 1;
+    string time =2;
 }

@@ -13,6 +13,7 @@ import (
 
 	"io"
 	"io/ioutil"
+	"sync"
 	"time"
 )
 
@@ -26,7 +27,7 @@ func BenchmarkGrpc(b *testing.B) {
 
 	req := &pb.MessageRequest{Msg: `hello grpc!`}
 	ctx := context.Background()
-	//b.SetParallelism(50)
+	b.SetParallelism(100)
 	b.RunParallel(func(pbt *testing.PB) {
 		for pbt.Next() {
 			_, err = c.Create(ctx, req)
@@ -43,6 +44,54 @@ func BenchmarkGrpc(b *testing.B) {
 	//		b.Logf(`error grpc: %s`, err)
 	//	}
 	//}
+}
+
+func BenchmarkGrpcByStream(b *testing.B) {
+	conn, err := grpc.Dial(`0.0.0.0:4569`, grpc.WithInsecure())
+	if err != nil {
+		b.Fatalf("did not connect: %v", err)
+	}
+	defer conn.Close()
+	c := pb.NewCreatorClient(conn)
+
+	req := &pb.MessageRequest{Msg: `hello grpc!`}
+	ctx := context.Background()
+	b.SetParallelism(1000)
+	stream, err := c.CreateByStream(ctx)
+	if err != nil {
+		b.Fatalf("didn't open stream for streating messeges")
+	}
+
+	//for i := 0; i < b.N; i++ {
+	//
+	//}
+
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		for i := 0; i < b.N; i++ {
+			_, err = stream.Recv()
+			if err != nil {
+				b.Errorf(`error grpc: %s`, err)
+			}
+		}
+		wg.Done()
+	}()
+
+	b.RunParallel(func(pbt *testing.PB) {
+		for pbt.Next() {
+			err = stream.Send(req)
+			if err != nil {
+				b.Errorf(`error grpc: %s`, err)
+			}
+		}
+	})
+
+	wg.Wait()
+	err = stream.CloseSend()
+	if err != nil {
+		b.Errorf(`error grpc: %s`, err)
+	}
 }
 
 const (

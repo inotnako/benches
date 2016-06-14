@@ -5,13 +5,17 @@ import (
 	_ "github.com/lib/pq"
 
 	"flag"
-	"net"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/grpclog"
 
 	pb "github.com/antonikonovalov/benches/grpc/proto"
 	"github.com/antonikonovalov/benches/grpc/server"
+	"github.com/kavu/go_reuseport"
+	"net/http"
+	_ "net/http/pprof"
+
+	_ "golang.org/x/net/trace"
 )
 
 var (
@@ -36,10 +40,15 @@ func main() {
 		grpclog.Fatalf("failed makeTestTables: %v", err)
 	}
 
-	lis, err := net.Listen("tcp", *addr)
+	lis, err := reuseport.NewReusablePortListener("tcp4", *addr)
 	if err != nil {
 		grpclog.Fatalf("failed to listen: %v", err)
 	}
+
+	go func() {
+		grpclog.Fatal(http.ListenAndServe("localhost:6060", nil))
+	}()
+
 	grpcServer := grpc.NewServer()
 	pb.RegisterCreatorServer(grpcServer, server.New(db))
 	grpcServer.Serve(lis)
