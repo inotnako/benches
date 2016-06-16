@@ -3,13 +3,9 @@ syntax = "proto3";
 package yupi;
 
 service Creator {
-    // метод позволяет сервисам реистриваться сервисам
-    // для того чтобы потом их можно было использовать инспектору
     rpc Create(MessageRequest) returns (MessageResponse) {}
     rpc CreateByStream(stream MessageRequest) returns (stream MessageResponse) {}
 }
-
-
 
 message MessageRequest {
     string msg = 1;
