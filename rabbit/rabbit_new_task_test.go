@@ -6,11 +6,10 @@ import (
 )
 
 func BenchmarkNewTask(b *testing.B) {
-	conn, _ := amqp.Dial("amqp://user:password@192.168.99.100:5672/")
+	conn, _ := amqp.Dial("amqp://guest:guest@0.0.0.0:5672/")
 	defer conn.Close()
 
 	ch, _ := conn.Channel()
-	//ch.Confirm(false)
 	defer ch.Close()
 
 	q, _ := ch.QueueDeclare(

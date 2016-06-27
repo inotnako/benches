@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package greetings;
+
+service GreetingsService {
+    rpc Talk(stream MsgRequest) returns (stream MsgResponse);
+}
+
+message MsgRequest {
+    string msg = 1;
+}
+
+message MsgResponse {
+    string msg = 1;
+}
