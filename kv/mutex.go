@@ -4,6 +4,17 @@ import (
 	"sync"
 )
 
+var KVStore = &KV{s: make(map[string]interface{}, 0)}
+
+var KVRStore = &KVR{s: make(map[string]interface{}, 0)}
+
+var KVChannelStore = NewKVC()
+
+var KVCtxStore = NewKVCtx()
+
+var KVCheStore = NewKVChe()
+var KVChmStore = NewKVChm()
+
 type KV struct {
 	l sync.Mutex
 	s map[string]interface{}
@@ -91,9 +102,3 @@ func (k *KVR) Get(key string) interface{} {
 	defer k.l.RUnlock()
 	return k.s[key]
 }
-
-var KVStore = &KV{s: make(map[string]interface{}, 0)}
-
-var KVRStore = &KVR{s: make(map[string]interface{}, 0)}
-
-var KVChannelStore = NewKVC()
