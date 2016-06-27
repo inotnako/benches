@@ -7,12 +7,9 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/grpclog"
 
-	"fmt"
 	pb "github.com/antonikonovalov/benches/grpc-max-streams/greetings"
 	"github.com/antonikonovalov/benches/grpc-max-streams/service"
-	"net/http"
-
-	_ "net/http/pprof"
+	// _ "net/http/pprof"
 )
 
 var (
@@ -25,13 +22,14 @@ func main() {
 	if err != nil {
 		grpclog.Fatalf("failed to listen: %v", err)
 	}
+	grpc.EnableTracing = false
 
 	// Set up a connection to the lookupd services
 
 	grpcServer := grpc.NewServer()
 	defer grpcServer.Stop()
 
-	go http.ListenAndServe(fmt.Sprintf(":%d", 36663), nil)
+	// go http.ListenAndServe(fmt.Sprintf(":%d", 36663), nil)
 	pb.RegisterGreetingsServiceServer(grpcServer, service.New())
 	grpcServer.Serve(lis)
 }

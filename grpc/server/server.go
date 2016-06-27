@@ -5,6 +5,7 @@ import (
 	pb "github.com/antonikonovalov/benches/grpc/proto"
 	"golang.org/x/net/context"
 	"io"
+	"log"
 	"time"
 )
 
@@ -69,6 +70,14 @@ func (s *server) CreateByStream(stream pb.Creator_CreateByStreamServer) error {
 				if err != nil {
 					return err
 				}
+				err = stream.Send(resp)
+				if err != nil {
+					return err
+				}
+				err = stream.Send(resp)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -86,7 +95,9 @@ func (s *server) processor() (chan *pb.MessageRequest, chan error, chan *pb.Mess
 	for i := 0; i < w; i++ {
 		go func() {
 			for msg := range in {
-				resp := new(pb.MessageResponse)
+				log.Println("message: ", msg)
+
+				resp := &pb.MessageResponse{Msg: msg.Msg}
 				err := s.db.QueryRow(`INSERT INTO test_messages (msg) VALUES ($1) RETURNING id`, msg.Msg).Scan(&resp.Id)
 				if err != nil {
 					errC <- err
@@ -95,6 +106,7 @@ func (s *server) processor() (chan *pb.MessageRequest, chan error, chan *pb.Mess
 					close(in)
 					return
 				} else {
+					log.Println("recv: ", msg, "send: ", resp)
 					out <- resp
 				}
 
