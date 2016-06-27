@@ -1,7 +1,7 @@
 package service
 
 import (
-	pb "gitlab.nct/msg/grpc-exp/greetings"
+	pb "github.com/antonikonovalov/benches/grpc-max-streams/greetings"
 	"strconv"
 	"sync/atomic"
 )

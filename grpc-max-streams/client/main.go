@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/fsouza/go-dockerclient/external/golang.org/x/net/context"
-	"gitlab.nct/msg/grpc-exp/greetings"
+	"github.com/antonikonovalov/benches/grpc-max-streams/greetings"
+	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/grpclog"
 	"time"

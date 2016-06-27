@@ -6,7 +6,7 @@ import (
 
 	"golang.org/x/net/context"
 
-	pb "gitlab.nct/msg/grpc-exp/greetings"
+	pb "github.com/antonikonovalov/benches/grpc-max-streams/greetings"
 	//"io"
 )
 

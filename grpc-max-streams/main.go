@@ -8,8 +8,8 @@ import (
 	"google.golang.org/grpc/grpclog"
 
 	"fmt"
-	pb "gitlab.nct/msg/grpc-exp/greetings"
-	"gitlab.nct/msg/grpc-exp/service"
+	pb "github.com/antonikonovalov/benches/grpc-max-streams/greetings"
+	"github.com/antonikonovalov/benches/grpc-max-streams/service"
 	"net/http"
 
 	_ "net/http/pprof"
