@@ -75,17 +75,22 @@ func TestBlockByReadFromStreams(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	cli := NewGreetingsServiceClient(conn)
 
+	startFirst := make(chan *struct{}, 0)
 	wg := &sync.WaitGroup{}
 	for i := 1; i < 10; i++ {
 		wg.Add(1)
 		go func(id int) {
 			defer wg.Done()
+
+			// set default timeout
 			timeout := 5 * time.Second
+
 			if id == 1 {
 				timeout = 10 * time.Second
+			} else {
+				<-startFirst
 			}
 			ctx, cancel := context.WithTimeout(context.Background(), timeout)
 			defer cancel()
@@ -96,10 +101,13 @@ func TestBlockByReadFromStreams(t *testing.T) {
 				t.Error(err)
 				return
 			}
+			t.Logf("open stream from id=%d", id)
 
 			var counter int
 			// not read - just wait
 			if id == 1 {
+				// close first before start other streams open
+				close(startFirst)
 				t.Logf("start sleep %s on task-%d", timeout.String(), id)
 				time.Sleep(timeout)
 			} else {
